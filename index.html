@@ -306,10 +306,16 @@ const gameDiv = document.getElementById("game");
 const modeSelect = document.getElementById("mode");
 
 function getDailyCase() {
-  const today = new Date();
-  const daySeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-  return cases[daySeed % cases.length];
+  // Set your fixed CDT start date
+  const startDate = new Date(Date.UTC(2025, 9, 17, 5, 0, 0)); 
+  // Explanation: Oct = 9 (zero-indexed month), 05:00 UTC = midnight CDT
+
+  const nowUTC = new Date();
+  const diffDays = Math.floor((nowUTC - startDate) / (1000 * 60 * 60 * 24));
+
+  return cases[diffDays % cases.length];
 }
+
 
 function startGame() {
   mode = modeSelect.value;
@@ -483,7 +489,7 @@ function showShareButton(resultText, emojiGrid) {
 
 /* ---------- End of daily puzzle ---------- */
 function endDailyPuzzle(correctClueCount, won = true) {
-  const epoch = new Date("2025-10-17"); // starting date = #1
+const epoch = new Date(Date.UTC(2025, 9, 17, 5, 0, 0)); // midnight CDT baseline
   const today = new Date();
   const dayNumber = Math.floor((today - epoch) / (1000 * 60 * 60 * 24)) + 1;
 
