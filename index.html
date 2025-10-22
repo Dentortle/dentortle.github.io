@@ -346,28 +346,64 @@ function submitGuessFunc() {
   const guess = guessInput.value.trim();
   if (!guess) return;
 
+  // If guess is correct
   if (guess.toLowerCase() === currentCase.answer.toLowerCase()) {
     resultDiv.innerHTML = `🎉 Correct! The diagnosis is: <b>${currentCase.answer}</b>`;
+
     scores.push(clueIndex + 1);
-    localStorage.setItem("Scores", JSON.stringify(scores));
+    localStorage.setItem("dentordleScores", JSON.stringify(scores));
+
     submitGuess.disabled = true;
     nextCaseBtn.style.display = mode === "unlimited" ? "inline-block" : "none";
+
     if (mode === "daily") endDailyPuzzle(clueIndex + 1, true);
     updateChart();
+
+    // Show "Show Remaining Clues" button
+    if (clueIndex + 1 < currentCase.clues.length) {
+      const showCluesBtn = document.createElement("button");
+      showCluesBtn.textContent = "Show Remaining Clues 🧩";
+      showCluesBtn.style.marginTop = "10px";
+      showCluesBtn.style.backgroundColor = "#0077b6";
+      showCluesBtn.style.color = "white";
+      showCluesBtn.style.border = "none";
+      showCluesBtn.style.padding = "8px 16px";
+      showCluesBtn.style.borderRadius = "8px";
+      showCluesBtn.style.cursor = "pointer";
+
+      showCluesBtn.onclick = () => {
+        let remainingHtml = "";
+        for (let i = clueIndex + 1; i < currentCase.clues.length; i++) {
+          remainingHtml += `<p><b>Clue ${i + 1}:</b> ${currentCase.clues[i]}</p>`;
+        }
+        cluesDiv.innerHTML += remainingHtml;
+        showCluesBtn.style.display = "none";
+      };
+
+      resultDiv.appendChild(showCluesBtn);
+    }
+
   } else {
+    // Incorrect guess
     clueIndex++;
+    resultDiv.innerHTML = `<span style="color:red; font-weight:bold;">❌ Incorrect</span>`;
+
     if (clueIndex >= currentCase.clues.length) {
       resultDiv.innerHTML = `❌ Out of clues! The correct diagnosis was: <b>${currentCase.answer}</b>`;
       scores.push(currentCase.clues.length);
-      localStorage.setItem("Scores", JSON.stringify(scores));
+      localStorage.setItem("dentordleScores", JSON.stringify(scores));
       submitGuess.disabled = true;
       nextCaseBtn.style.display = mode === "unlimited" ? "inline-block" : "none";
       if (mode === "daily") endDailyPuzzle(6, false);
       updateChart();
-    } else displayClues();
+    } else {
+      displayClues();
+    }
   }
+
   guessInput.value = "";
 }
+
 
 startBtn.addEventListener("click", startGame);
 submitGuess.addEventListener("click", submitGuessFunc);
