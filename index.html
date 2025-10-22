@@ -492,9 +492,15 @@ function showCopyPopup() {
 
 /* ---------- Helper: day key ---------- */
 function getDayKey() {
-  const today = new Date();
-  const dayString = today.toISOString().slice(0, 10);
+  const now = new Date();
+  // Convert to UTC milliseconds
+  const nowUTC = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
+  // Convert to CDT (UTC−5)
+  const nowCDT = new Date(nowUTC - 5 * 60 * 60 * 1000);
+  const dayString = nowCDT.toISOString().slice(0, 10);
   return "_daily_" + dayString;
+}
+
 }
 
 /* ---------- Show the share container and hook copy ---------- */
