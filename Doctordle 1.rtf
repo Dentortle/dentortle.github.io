@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dental Case Quiz</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+    }
+    h1 {
+        text-align: center;
+        color: #343a40;
+    }
+    .case-container {
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0px 0px 15px rgba(0,0,0,0.1);
+        padding: 25px;
+        max-width: 800px;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    .clue {
+        margin-bottom: 15px;
+        padding: 10px;
+        background-color: #e9ecef;
+        border-radius: 8px;
+    }
+    input[type=text] {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        font-size: 16px;
+        margin-bottom: 15px;
+    }
+    button {
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #0056b3;
+    }
+    #scoreChart {
+        max-width: 700px;
+        margin-top: 30px;
+    }
+    .autocomplete-suggestions {
+        border: 1px solid #ced4da;
+        border-top: none;
+        max-height: 150px;
+        overflow-y: auto;
+        background-color: white;
+        position: absolute;
+        z-index: 1000;
+        width: calc(100% - 24px);
+    }
+    .autocomplete-suggestion {
+        padding: 8px;
+        cursor: pointer;
+    }
+    .autocomplete-suggestion:hover {
+        background-color: #e9ecef;
+    }
+</style>
+</head>
+<body>
+
+<h1>Daily Dental Case Quiz</h1>
+<div class="case-container">
+    <div id="clues"></div>
+    <input type="text" id="answer" placeholder="Type your answer...">
+    <div id="autocomplete" class="autocomplete-suggestions"></div>
+    <button id="submitBtn">Submit</button>
+    <p id="result" style="margin-top:15px;"></p>
+</div>
+
+<canvas id="scoreChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const cases = [
+{
+    query: "What is the specific name of this hereditary dentin disorder that primarily affects the primary dentition?",
+    clues: [
+        "A young child's primary teeth exhibit a blue/brown translucency.",
+        "Inherited as an autosomal dominant trait.",
+        "Radiographs show bulbous crowns and cervical constriction.",
+        "Root length is normal in both primary and permanent dentition.",
+        "Permanent teeth appear clinically normal.",
+        "Radiograph shows enlarged pulp chambers with apical extensions ('thistle tube-shaped')."
+    ],
+    answer: "Dentin Dysplasia"
+},
+{
+    query: "What is the most common symptomatic primary infection pattern of Human Herpesvirus (HSV)?",
+    clues: [
+        "A 3-year-old child presents with cervical lymphadenopathy, fever, chills, and anorexia.",
+        "Numerous vesicles that break down into ulcers found throughout the mouth.",
+        "Both keratinized and non-keratinized mucosa affected.",
+        "Self-limiting, resolving in 5–14 days.",
+        "Causative agent is often HSV-1.",
+        "Histology shows acantholysis, nuclear enlargement, and multinucleation."
+    ],
+    answer: "Primary Herpetic Gingivostomatitis"
+},
+{
+    query: "What is the common name for the recurrent form of HSV infection, often triggered by stress or UV light?",
+    clues: [
+        "Prodromal tingling or burning before lesions.",
+        "Lesions on vermillion border of lower lip.",
+        "Intraoral lesions only on keratinized mucosa.",
+        "Lesions start as blisters but quickly ulcerate.",
+        "Heal within 7–10 days.",
+        "Histology shows Tzanck cells; virus latent in trigeminal ganglion."
+    ],
+    answer: "Recurrent Herpes Simplex Infection"
+},
+// ... add remaining cases 4–50 in same format ...
+];
+
+const answerChoices = [
+"Attrition","Microdontia","Dilaceration","Amelogenesis imperfecta","Erosion","Gemination","Taurodontism","Dentinogenesis imperfecta","Abrasion","Fusion","Dens invaginatus","Dentin dysplasia","Hyperdontia","Talon cusp","Hypercementosis","Turner hypoplasia","Hypodontia","Concrescence","Ankylosis","Syphilitic hypoplasia",
+"Erythema migrans","Leukoedema","Hairy tongue","Nasopalatine duct cyst","Ankyloglossia","Linea alba","Lingual varicosities","Dermoid cyst","White sponge nevus","Macroglossia","Exostoses","Oral lymphoepithelial cyst","Cleidocranial dysplasia","Stafne defect","Torus mandibularis","Amalgam tattoo","Double lip","Lingual thyroid","Torus palatinus",
+"Fordyce granules","Fissured tongue","Nasolabial cyst",
+"HIV periodontal disease","Periapical granuloma / cyst","Syphilis","Epulis fissuratum","Residual cyst","Tuberculosis","Inflammatory papillary hyperplasia","Internal resorption","Cat-scratch disease","Pyogenic granuloma","External resorption",
+"Peripheral giant cell granuloma","Osteosclerosis",
+"Peripheral ossifying fibroma","Condensing osteitis",
+"Congenital epulis",
+"Papillon-Lefevre syndrome",
+"Aphthous stomatitis","Pemphigus","Amyloidosis","Aphthous-like ulcers","Mucous membrane pemphigoid","Sarcoidosis","Graft-vs.-host disease","Lupus erythematosus","Granulomatosis with polyangiitis (Wegener’s)","Erythema multiforme","Lichen planus","Sturge-Weber Angiomatosis","Hereditary hemorrhagic telangiectasia",
+"Herpes simplex associated Primary herpetic gingivostomatitis","Herpes simplex associated Recurrent herpes simplex infection",
+"Varicella-Zoster associated Varicella","Varicella-Zoster associated Herpes Zoster",
+"Epstein-Barr virus associated Infectious mononucleosis","Epstein-Barr virus associated Hairy Leukoplakia",
+"HHV-8 Associated Kaposi sarcoma","Papilloma","Verruca vulgaris","Condyloma acuminatum","Focal epithelial hyperplasia","Herpangina","Hand-foot-and-mouth","Candidiasis","Histoplasmosis","Mucormycosis","Peutz-Jeghers Syndrome","Ulcerative colitis","Gardner syndrome","Crohn disease","Anemia","Hodgkin lymphoma","Plasmacytoma","Multiple myeloma","Neutropenia","Non-Hodgkin lymphoma","Burkitt lymphoma","Thrombocytopenia","Langerhans cell histiocytosis","Leukemia","Paget disease","Ewing sarcoma","Intrabony vascular malformation","Cherubism","Metastatic tumors of the jaw","Fibrous dysplasia","Osteoma","Simple bone cyst","Cemento-osseous dysplasia","Osteoblastoma","Aneurysmal bone cyst","Ossifying fibroma","Osteosarcoma","Central giant cell granuloma","Acromegaly / Gigantism","Hyperparathyroidism","Multiple endocrine neoplasia syndromes","Hypothyroidism","Addison disease","Mucocele","Oncocytoma","Ranula","Warthin Tumor","Salivary duct cyst","Canalicular Adenoma","Sialolithiasis","Basal Cell Adenoma","Xerostomia","Mucoepidermoid carcinoma","Sjogren syndrome","Intraosseous mucoepidermoid carcinoma","Necrotizing sialometaplasia","Acinic cell adenocarcinoma","Pleomorphic Adenoma","Adenoid cystic carcinoma","Fibroma","Neurofibromatosis","Lipoma","Granular cell tumor","Traumatic neuroma","Hemangioma / vascular malformations","Neurilemmoma","Lymphatic malformation","Neurofibroma","Traumatic ulceration / granuloma","Riga-Fede Disease","Nicotine stomatitis","Frictional keratosis","Verruciform xanthoma","Oral melanotic macule","Melanoma","Smokeless tobacco keratosis","Acquired melanocytic nevi","Basal cell carcinoma","Leukoplakia","Proliferative Verrucous Leukoplakia","Oral submucous fibrosis","Erythroplakia","Squamous cell carcinoma","Oropharyngeal squamous cell carcinoma","Actinic cheilosis","Verrucous carcinoma","Dentigerous cyst","Gingival cyst","Ameloblastic fibroma","Paradental cyst","Lateral periodontal cyst","Ameloblastic fibro-odontoma","Eruption cyst","Calcifying odontogenic cyst","Cementoblastoma","Odontogenic keratocyst","Ameloblastoma","Odontoma","Gorlin syndrome","Adenomatoid odontogenic tumor","Myxoma"
+];
+
+let today = new Date();
+let caseIndex = today.getDate() % cases.length;
+let currentCase = cases[caseIndex];
+let clueIndex = 0;
+
+const cluesDiv = document.getElementById("clues");
+const answerInput = document.getElementById("answer");
+const autocompleteDiv = document.getElementById("autocomplete");
+const result = document.getElementById("result");
+
+// Show initial clue
+updateClues();
+
+document.getElementById("submitBtn").addEventListener("click", submitAnswer);
+
+answerInput.addEventListener("input", updateAutocomplete);
+
+function updateClues() {
+    cluesDiv.innerHTML = "<strong>Case Clues:</strong><br>";
+    for(let i = 0; i <= clueIndex; i++){
+        cluesDiv.innerHTML += "<div class='clue'>" + currentCase.clues[i] + "</div>";
+    }
+}
+
+function submitAnswer() {
+    let userAnswer = answerInput.value.trim().toLowerCase();
+    let correctAnswer = currentCase.answer.toLowerCase();
+
+    if(userAnswer === correctAnswer){
+        result.innerHTML = `✅ Correct! You solved the case in ${clueIndex+1} clue(s).`;
+        saveScore(clueIndex+1);
+        clueIndex = 0;
+        // For daily cases, user can't skip to next; we leave case as solved.
+        document.getElementById("submitBtn").disabled = true;
+    } else {
+        clueIndex++;
+        if(clueIndex < currentCase.clues.length){
+            updateClues();
+            result.innerHTML = `❌ Incorrect. Here's the next clue.`;
+        } else {
+            result.innerHTML = `❌ Incorrect. The correct answer was: ${currentCase.answer}`;
+            saveScore(currentCase.clues.length);
+            clueIndex = 0;
+            document.getElementById("submitBtn").disabled = true;
+        }
+    }
+    answerInput.value = "";
+    autocompleteDiv.innerHTML = "";
+}
+
+// Autocomplete
+function updateAutocomplete() {
+    let val = answerInput.value.toLowerCase();
+    autocompleteDiv.innerHTML = "";
+    if(!val) return;
+    let matches = answerChoices.filter(choice => choice.toLowerCase().includes(val));
+    matches.forEach(match => {
+        let div = document.createElement("div");
+        div.className = "autocomplete-suggestion";
+        div.innerText = match;
+        div.addEventListener("click", () => {
+            answerInput.value = match;
+            autocompleteDiv.innerHTML = "";
+        });
+        autocompleteDiv.appendChild(div);
+    });
+}
+
+// Score tracking
+function saveScore(cluesUsed){
+    let scores = JSON.parse(localStorage.getItem("dailyCaseScores") || "[]");
+    scores.push({date: today.toDateString(), cluesUsed: cluesUsed});
+    localStorage.setItem("dailyCaseScores", JSON.stringify(scores));
+    updateChart();
+}
+
+// Chart
+let ctx = document.getElementById('scoreChart').getContext('2d');
+let chart;
+function updateChart(){
+    let scores = JSON.parse(localStorage.getItem("dailyCaseScores") || "[]");
+    let labels = scores.map(s=>s.date);
+    let data = scores.map(s=>s.cluesUsed);
+    if(chart) chart.destroy();
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Clues used to solve case',
+                data: data,
+                fill: false,
+                borderColor: 'rgba(0,123,255,0.8)',
+                tension: 0.3
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    title: {display:true,text:'Clues Used'},
+                    min: 0,
+                    max: Math.max(10, ...data)+1
+                }
+            }
+        }
+    });
+}
+
+// Initial chart render
+updateChart();
+
+</script>
+</body>
+</html>
