@@ -324,19 +324,27 @@ function getDailyCase() {
 (function fixDailyStorageForCDT() {
   const oldKeyPrefix = 'dentordle_daily_';
   const now = new Date();
+
+  // Convert to UTC then to CDT
   const nowUTC = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
-  const nowCDT = new Date(nowUTC - 5 * 60 * 60 * 1000); // convert to CDT
+  const nowCDT = new Date(nowUTC - 5 * 60 * 60 * 1000);
   const todayCdtKey = nowCDT.toISOString().slice(0, 10);
   const newKey = oldKeyPrefix + todayCdtKey;
 
+  // Go through all keys in localStorage
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith(oldKeyPrefix) && k !== newKey) {
+      localStorage.removeItem(k); // remove all old daily keys
+    }
+  });
+
+  // Ensure you always get a new daily if no value exists for today
   const val = localStorage.getItem(newKey);
   if (!val) {
-    // remove all old daily keys to reset for new day
-    Object.keys(localStorage).forEach(k => {
-      if (k.startsWith(oldKeyPrefix)) localStorage.removeItem(k);
-    });
+    localStorage.removeItem(newKey); // just to be sure no old data lingers
   }
 })();
+
 
 
 
