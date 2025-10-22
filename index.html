@@ -306,34 +306,38 @@ const gameDiv = document.getElementById("game");
 const modeSelect = document.getElementById("mode");
 
 function getDailyCase() {
-  // Set your fixed CDT start date
-  const startDate = new Date(Date.UTC(2025, 9, 17, 5, 0, 0)); 
-  // Explanation: Oct = 9 (zero-indexed month), 05:00 UTC = midnight CDT
+  // Fixed start date at midnight CDT (Oct 17, 2025 00:00 CDT = Oct 17, 2025 05:00 UTC)
+  const startDateUTC = new Date(Date.UTC(2025, 9, 17, 5, 0, 0)); 
 
-  const nowUTC = new Date();
-  const diffDays = Math.floor((nowUTC - startDate) / (1000 * 60 * 60 * 24));
+  const now = new Date();
+  // Convert now to UTC milliseconds
+  const nowUTC = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
 
+  // Subtract 5 hours to get "CDT time" (UTC−5)
+  const nowCDT = nowUTC - 5 * 60 * 60 * 1000;
+
+  const diffDays = Math.floor((nowCDT - startDateUTC.getTime()) / (1000 * 60 * 60 * 24));
   return cases[diffDays % cases.length];
 }
 
-     // --- Fix for CDT daily migration ---
+// --- Fix for CDT daily migration ---
 (function fixDailyStorageForCDT() {
   const oldKeyPrefix = 'dentordle_daily_';
-  const todayCDT = new Date();
-  // compute "today" based on midnight CDT (UTC+5h)
-  const cdtOffsetMs = 5 * 60 * 60 * 1000;
-  const todayCdtKey = new Date(todayCDT.getTime() + cdtOffsetMs).toISOString().slice(0,10);
+  const now = new Date();
+  const nowUTC = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
+  const nowCDT = new Date(nowUTC - 5 * 60 * 60 * 1000); // convert to CDT
+  const todayCdtKey = nowCDT.toISOString().slice(0, 10);
   const newKey = oldKeyPrefix + todayCdtKey;
 
-  // if old key format doesn't match new day, allow new case
   const val = localStorage.getItem(newKey);
   if (!val) {
-    // remove old ones to reset daily for new logic
+    // remove all old daily keys to reset for new day
     Object.keys(localStorage).forEach(k => {
       if (k.startsWith(oldKeyPrefix)) localStorage.removeItem(k);
     });
   }
 })();
+
 
 
 function startGame() {
