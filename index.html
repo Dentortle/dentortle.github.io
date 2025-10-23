@@ -74,7 +74,7 @@
 <!-- Copy popup -->
 <div id="copyPopup" style="
   display:none;
-  position:fixed;
+  position:ed;
   bottom:30px;
   left:50%;
   transform:translateX(-50%);
@@ -162,7 +162,7 @@ const cases = [
 {answer:"Cat-scratch Disease",clues:["A child presents with chronic, regional lymphadenopathy following a cat scratch.","Examination reveals a healed papule or pustule along the original scratch line, followed by single or multiple node involvement.","Imaging is not relevant.","Histology shows stellate suppurative necrosis surrounded by histiocytes and neutrophils.","This infectious disorder is caused by the organism Bartonella henselae.","This is the most common cause of chronic, regional lymphadenopathy in children, and the disease is typically self-limiting, resolving in 4 months."]},
 {answer:"Minor Aphthous Ulcerations",clues:["A patient presents with a single, painful ulceration on the buccal mucosa.","Examination shows a small ulceration, typically less than 1 cm in size, located on movable mucosa.","Imaging is not required.","Histopathology reveals destruction due to a T-cell mediated immunologic reaction (imbalance of CD8+ > CD4+ T cells).","The patient experiences prodromal symptoms such as burning, itching, or stinging.","The ulcer heals without scarring in 7–14 days."]},
 {answer:"Major Aphthous Ulcerations",clues:["A post-pubertal patient presents with extremely painful, large oral ulcers.","Examination reveals one or more ulcers, typically 1–3 cm in size, located on movable mucosa.","Imaging is not required.","Histology would show inflammation and tissue destruction.","The ulcers often arise after puberty.","The ulcers heal in 2–6 weeks but typically result in scarring."]},
-{answer:"Herpetiform Aphthous Ulcerations",clues:["A female adult patient presents with a widespread outbreak of small oral ulcers.","Examination reveals multiple ulcers (more than 100) that are small (1–3 mm) and located anywhere in the mouth (movable or fixed mucosa).","Imaging is not required.","Histopathology confirms an ulcerative disease that did not begin as a blister.","The patient is asymptomatic, confirming the non-infectious nature of the disorder.","The lesions heal in 7–10 days, but recurrence is common."]},
+{answer:"Herpetiform Aphthous Ulcerations",clues:["A female adult patient presents with a widespread outbreak of small oral ulcers.","Examination reveals multiple ulcers (more than 100) that are small (1–3 mm) and located anywhere in the mouth (movable or ed mucosa).","Imaging is not required.","Histopathology confirms an ulcerative disease that did not begin as a blister.","The patient is asymptomatic, confirming the non-infectious nature of the disorder.","The lesions heal in 7–10 days, but recurrence is common."]},
 {answer:"Graft-vs.-Host Disease (Chronic)",clues:["A patient who received a bone marrow transplant over 100 days ago presents with symptoms resembling autoimmune disease.","Oral examination shows fine reticular networks of white striae (similar to Lichen Planus) on the buccal mucosa, tongue, and labial mucosa.","Radiographs are non-contributory.","Histology shows hyperkeratosis, saw-tooth rete ridges, and degeneration of the basal layer, similar to lichen planus.","The patient reports symptoms of xerostomia and persistent burning sensations.","Diagnosis is established by combining histologic findings with the patient's history of allogeneic transplant."]},
 {answer:"Erythema Multiforme Minor",clues:["A young patient presents with prodromal symptoms including fever, malaise, and cough.","Examination shows elevated papular structures (blisters) that quickly break into ulcers on the vermillion and periphery of the tongue.","Imaging is non-specific.","Histology shows subepithelial or intraepithelial vesiculation and necrotic basal keratinocytes (epithelium detaches from CT).","The acute onset condition is often triggered by an infection, such as Herpes Simplex Virus.","The condition is self-limiting and lasts 2–6 weeks."]},
 {answer:"Stevens-Johnson Syndrome (EM Major)",clues:["A younger patient presents with systemic symptoms involving at least two mucosal sites.","Examination reveals widespread skin lesions covering less than 10% of the body surface.","Imaging is not relevant.","Histology reveals necrotic basal keratinocytes and a mixed inflammatory infiltrate often arranged in a perivascular pattern.","The condition is usually triggered by a drug rather than an infection.","The patient must be treated in a burn unit, though the mortality rate is 1–5%."]},
@@ -325,31 +325,28 @@ function getDailyCase() {
   return cases[(diffDays + cases.length) % cases.length];
 }
 
-// ✅ Automatically clear yesterday’s daily when a new CDT day starts
-(function forceNewDailyCDT() {
-  const prefix = "dentordle_daily_";
+// --- Auto-reset for new daily puzzle at midnight CDT ---
+(function autoResetDailyCDT() {
+  const prefix = 'dentordle_daily_';
 
-  // --- compute CDT date string ---
+  // Compute today’s CDT date (UTC−5)
   const now = new Date();
   const nowUTC = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
   const nowCDT = new Date(nowUTC - 5 * 60 * 60 * 1000);
-  const todayCDT = nowCDT.toISOString().slice(0, 10); // YYYY-MM-DD
-  const todayKey = prefix + todayCDT;
+  const todayKey = prefix + nowCDT.toISOString().slice(0, 10);
 
-  // --- get stored info ---
-  const lastPlayed = localStorage.getItem("dentordle_last_played_date");
+  // Check if the saved key is for an old date
+  const allKeys = Object.keys(localStorage).filter(k => k.startsWith(prefix));
 
-  // --- check and reset if day changed ---
-  if (lastPlayed !== todayCDT) {
-    Object.keys(localStorage).forEach((k) => {
-      if (k.startsWith(prefix)) localStorage.removeItem(k);
-    });
-    localStorage.setItem("dentordle_last_played_date", todayCDT);
-    console.log("🦷 Dentordle: new CDT day detected → daily reset done");
-  } else {
-    console.log("🦷 Dentordle: same CDT day → no reset");
+  if (allKeys.length) {
+    const latestKey = allKeys.sort().pop();
+    if (latestKey !== todayKey) {
+      // If stored key isn’t today’s date, clear it automatically
+      allKeys.forEach(k => localStorage.removeItem(k));
+    }
   }
 })();
+
 
 
 
