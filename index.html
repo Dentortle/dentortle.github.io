@@ -305,48 +305,52 @@ const guessInput = document.getElementById("guessInput");
 const gameDiv = document.getElementById("game");
 const modeSelect = document.getElementById("mode");
 
-// ✅ Generate the correct daily case based on CDT (UTC−5)
-function getDailyCase() {
-  // Fixed start date (first puzzle = Oct 17, 2025 00:00 CDT = Oct 17 05:00 UTC)
-  const startDateUTC = new Date(Date.UTC(2025, 9, 17, 5, 0, 0)); 
+// ✅ Daily puzzle logic — correct CDT handling and forced daily refresh
 
-  // Get current UTC time
+function getDailyCase() {
+  // Starting point: Oct 17, 2025 at 00:00 CDT = 05:00 UTC
+  const startDateUTC = new Date(Date.UTC(2025, 9, 17, 5, 0, 0));
+
+  // Current time in UTC
   const now = new Date();
   const nowUTC = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
 
   // Convert to CDT (UTC−5)
   const nowCDT = nowUTC - 5 * 60 * 60 * 1000;
 
-  // Compute days since start date
+  // Compute how many full CDT days since start
   const diffDays = Math.floor((nowCDT - startDateUTC.getTime()) / (1000 * 60 * 60 * 24));
 
-  return cases[diffDays % cases.length];
+  // Use that day number to pick the case
+  return cases[(diffDays + cases.length) % cases.length];
 }
 
-// ✅ Automatically reset localStorage when a new CDT day starts
-(function resetDailyForNewCDTDay() {
+// ✅ Automatically clear yesterday’s daily when a new CDT day starts
+(function forceNewDailyCDT() {
   const prefix = "dentordle_daily_";
 
-  // Get "today" in CDT
+  // --- compute CDT date string ---
   const now = new Date();
   const nowUTC = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
   const nowCDT = new Date(nowUTC - 5 * 60 * 60 * 1000);
-
-  // Get YYYY-MM-DD for CDT
-  const todayCDT = nowCDT.toISOString().slice(0, 10);
+  const todayCDT = nowCDT.toISOString().slice(0, 10); // YYYY-MM-DD
   const todayKey = prefix + todayCDT;
 
-  // Check stored date
-  const storedDate = localStorage.getItem("dentordle_last_played_date");
+  // --- get stored info ---
+  const lastPlayed = localStorage.getItem("dentordle_last_played_date");
 
-  // If last played date != today, clear old daily progress
-  if (storedDate !== todayCDT) {
+  // --- check and reset if day changed ---
+  if (lastPlayed !== todayCDT) {
     Object.keys(localStorage).forEach((k) => {
       if (k.startsWith(prefix)) localStorage.removeItem(k);
     });
     localStorage.setItem("dentordle_last_played_date", todayCDT);
+    console.log("🦷 Dentordle: new CDT day detected → daily reset done");
+  } else {
+    console.log("🦷 Dentordle: same CDT day → no reset");
   }
 })();
+
 
 
 
