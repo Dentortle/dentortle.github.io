@@ -308,22 +308,22 @@ const modeSelect = document.getElementById("mode");
 // ✅ Daily puzzle logic — correct CDT handling and forced daily refresh
 
 function getDailyCase() {
-  // Starting point: Oct 17, 2025 at 00:00 CDT = 05:00 UTC
+  // Fixed CDT epoch start (Oct 17, 2025 00:00 CDT = Oct 17, 2025 05:00 UTC)
   const startDateUTC = new Date(Date.UTC(2025, 9, 17, 5, 0, 0));
 
-  // Current time in UTC
   const now = new Date();
   const nowUTC = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
-
-  // Convert to CDT (UTC−5)
   const nowCDT = nowUTC - 5 * 60 * 60 * 1000;
 
-  // Compute how many full CDT days since start
   const diffDays = Math.floor((nowCDT - startDateUTC.getTime()) / (1000 * 60 * 60 * 24));
 
-  // Use that day number to pick the case
-  return cases[(diffDays + cases.length) % cases.length];
+  // --- Pseudo-random rotation for daily cases ---
+  const seed = (diffDays * 9301 + 49297) % 233280;
+  const index = Math.floor((seed / 233280) * cases.length);
+
+  return cases[index];
 }
+
 
 // --- Auto-reset for new daily puzzle at midnight CDT ---
 (function autoResetDailyCDT() {
